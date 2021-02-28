@@ -2,8 +2,18 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use ieee.numeric_std_unsigned.all;
 
 
+library vunit_lib;
+context vunit_lib.vunit_context;
+
+
+--!
+--! 
+--!
+--!
+--! i_raw: raw sensor data 
 entity top is
 	generic(
 		N : natural := 8
@@ -12,9 +22,8 @@ entity top is
 		i_clk  : in  std_logic;
 		i_rst  : in  std_logic;
 		i_en   : in  std_logic;
-		i_x    : in  std_logic_vector(N-1 downto 0);
-		i_y    : in  std_logic_vector(N-1 downto 0);
-		o_z    : out std_logic_vector(2*N-1 downto 0);
+		i_raw  : in  std_logic_vector(N-1 downto 0);
+		o_res  : out std_logic_vector(N-1 downto 0);
 		o_done : out std_logic
 	);
 end entity top;
@@ -33,7 +42,8 @@ architecture rtl of top is
 	------------
 	-- constants
 	------------
-
+	-- constant 100
+	constant C_MULT_100 : std_logic_vector(N-1 downto 0) := X"0064";
 
 	----------
 	-- signals
@@ -41,37 +51,114 @@ architecture rtl of top is
 	signal s_state   : state_t;
 
 	signal s_done : std_logic;
+	signal s_prev_en : std_logic;
 
-	signal s_x : std_logic_vector(N-1   downto 0);
-	signal s_y : std_logic_vector(N-1   downto 0);
-	signal s_z : std_logic_vector(2*N-1 downto 0);
+	signal s_res : std_logic_vector(N-1 downto 0);
+
+	-- multiplication
+	signal s_mul_done  : std_logic;
+	signal s_mul_start : std_logic;
+	signal s_mul_res   : std_logic_vector(2*N-1 downto 0);
+	signal s_mul   : std_logic_vector(N-1 downto 0);
+
+	-- shift
+	signal s_shift_done  : std_logic;
+	signal s_shift_start : std_logic;
+	signal s_shift       : std_logic_vector(2*N-1 downto 0);
 begin
 
 	o_done <= s_done;
+	o_res  <= s_res;
 
-	dut_mul: entity work.mul(rtl)
-	port map(
-		i_x    => s_x,
-		i_y    => s_y,
-		o_z    => s_z,
-		o_cout => OPEN
-	);
-
-	calc: process(i_clk, i_rst)
+	calc: process(i_clk, i_rst, s_mul_done, s_shift_done)
 	begin
 		if i_rst = '1' then
-			s_state <= IDLE;
+			s_state       <= IDLE;
+			s_shift_start <= '0';
+			s_shift       <= (others => '0');
+			s_mul_start   <= '0';
+			s_mul_res     <= (others => '0');
+			s_res         <= (others => '0');
+			s_done        <= '0';
 		elsif rising_edge(i_clk) then
 			case s_state is
 				when IDLE =>
+					print("IDLE");
+					s_done    <= '0';
+					s_res     <= (others => '0');
+					s_prev_en <= i_en;
+					s_mul_start   <= '0';
+					s_shift       <= (others => '0');
+					s_mul_res     <= (others => '0');
+
+					if s_prev_en = '0' and i_en = '1' then
+						s_state     <= MULT;
+					else
+						s_state <= IDLE;
+					end if;
 				when MULT =>
+					print("MULT");
+					s_mul_start <= '1';
+					s_mul <= i_raw;
+					if s_mul_done = '1' then
+						s_state       <= SHIFT_16;
+						s_shift       <= s_mul_res;
+					else
+						s_state <= MULT;
+					end if;
 				when SHIFT_16 =>
+					print("SHIFT_16");
+					s_shift_start <= '1';
+
+					if s_shift_done = '1' then
+						s_state <= DONE;
+						s_res         <= s_shift(N-1 downto 0);
+					else
+						s_state <= SHIFT_16;
+					end if;
 				when DONE =>
-					s_state <= IDLE;
+					print("DONE");
+					s_done        <= '1';
+					s_shift_start <= '0';
+					s_state       <= IDLE;
 				when others =>
 					s_state <= IDLE;
 			end case;
 		end if;
 	end process calc;
 
+	-- 16-bit shift right (divide by 2^16)
+	shift: process(i_clk, s_shift_start)
+		--variable v_shift_res : std_logic_vector(2*N-1 downto 0);
+	begin
+		if rising_edge(i_clk) then
+			if s_shift_start = '1' then
+				s_shift_done <= '0';
+				s_shift <= s_shift srl N;
+--				for i in 0 to N-1 loop
+--					v_shift_res := '0' & v_shift_res(2*N-1 downto 1);
+--				end loop;
+				s_shift_done <= '1';
+			end if;
+		end if;
+	end process shift;
+	
+	-- multiplication
+	mul: process(s_mul)
+		variable pv : std_logic_vector(2*N-1 downto 0) := (others => '0');
+		variable bp : std_logic_vector(2*N-1 downto 0) := (others => '0');
+		--variable i  : natural := 0;
+	begin
+		bp := X"0000" & s_mul;
+		pv := (others => '0');
+
+		for i in 0 to N-1 loop
+			if C_MULT_100(i) ='1' then
+				pv := pv + bp;
+			end if;
+			bp := bp(2*N-2 downto 0) & '0';
+		end loop;
+			s_mul_res  <= pv;
+			s_mul_done <= '1';
+	end process mul;
 end architecture rtl;
