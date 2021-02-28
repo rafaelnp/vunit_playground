@@ -23,6 +23,7 @@ begin
 		variable bp : std_logic_vector(31 downto 0) := (others => '0');
 	begin
 		bp := X"0000" & i_y;
+		pv := (others => '0');
 
 		for i in 0 to 15 loop
 			if i_x(i) ='1' then

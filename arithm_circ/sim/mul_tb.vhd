@@ -50,6 +50,11 @@ begin
 		check_equal(s_z, 729 * 314);
 		info(to_string(to_integer(unsigned(s_z))));
 
+		wait for 10 ns;
+		info("second");
+		check_equal(s_z, 14 * 415);
+		info(to_string(to_integer(unsigned(s_z))));
+
 		test_runner_cleanup(runner);
 	end process main;
 
