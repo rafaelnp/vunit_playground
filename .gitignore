@@ -1,3 +1,11 @@
 # List of files and directories to ignore
 
 vunit_out
+xsim.dir
+xvhdl.log
+xvhdl.pb
+work
+
+.library_mapping.xml
+.project
+.settings
