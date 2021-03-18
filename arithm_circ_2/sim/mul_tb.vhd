@@ -21,6 +21,9 @@ architecture rtl of mul_tb is
 begin
 
 	dut: entity work.mul(rtl)
+	generic map(
+		N => C_SIZE
+	)
 	port map(
 		i_x    => s_x,
 		i_y    => s_y,
@@ -48,6 +51,11 @@ begin
 		wait for 6 ns;
 		info("first");
 		check_equal(s_z, 729 * 314);
+		info(to_string(to_integer(unsigned(s_z))));
+
+		wait for 10 ns;
+		info("first");
+		check_equal(s_z, 14 * 415);
 		info(to_string(to_integer(unsigned(s_z))));
 
 		test_runner_cleanup(runner);
