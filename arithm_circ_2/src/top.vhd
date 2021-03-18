@@ -76,7 +76,6 @@ begin
 	begin
 		if i_rst = '1' then
 			s_state       <= IDLE;
-			s_shift_start <= '0';
 			s_shift       <= (others => '0');
 			s_mul_start   <= '0';
 			s_mul_res     <= (others => '0');
@@ -87,12 +86,11 @@ begin
 				when IDLE =>
 					print("IDLE");
 					s_done    <= '0';
-					s_prev_en <= i_en;
 					s_mul_start   <= '0';
 					s_shift       <= (others => '0');
 					s_mul_res     <= (others => '0');
 
-					if s_prev_en = '0' and i_en = '1' then
+					if i_en = '1' then
 						s_state     <= MULT;
 					else
 						s_state <= IDLE;
@@ -124,17 +122,17 @@ begin
 				when SHIFT_16 =>
 					print("SHIFT_16");
 					--s_shift_start <= '1';
-					s_mul_res <= s_mul_res srl N;
+					s_shift <= s_mul_res srl N;
 					--s_shift_done <= '1';
 
 					s_state <= DONE;
 
 				when DONE =>
 					print("DONE");
-					s_res         <= s_mul_res(N-1 downto 0);
+					s_res         <= s_shift(N-1 downto 0);
 					s_done        <= '1';
-					s_shift_start <= '0';
 					s_state       <= IDLE;
+					--s_en     <= '0';
 				when others =>
 					s_state <= IDLE;
 			end case;

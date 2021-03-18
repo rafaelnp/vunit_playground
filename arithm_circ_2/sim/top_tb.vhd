@@ -55,7 +55,21 @@ begin
 		wait for 20 ns;
 		s_en  <= '1';
 		wait until s_done_tb = '1';
+		wait for 20 ns;
 		check_equal(s_res_tb, 51);
+
+
+		s_rst <= '1';
+		s_en  <= '0';
+		s_raw <= X"9500";
+		wait for 20 ns;
+		s_rst <= '0';
+		wait for 20 ns;
+		s_en  <= '1';
+
+		wait until s_done_tb = '1';
+		wait for 20 ns;
+		check_equal(s_res_tb, 58);
 
 		test_runner_cleanup(runner);
 	end process main;
