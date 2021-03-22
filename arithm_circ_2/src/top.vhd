@@ -59,7 +59,6 @@ architecture rtl of top is
 	signal s_mul_done  : std_logic;
 	signal s_mul_start : std_logic;
 	signal s_mul_res   : std_logic_vector(2*N-1 downto 0);
-	signal s_mul   : std_logic_vector(N-1 downto 0);
 
 	-- shift
 	signal s_shift_done  : std_logic;
@@ -98,9 +97,8 @@ begin
 				when MULT =>
 					s_res     <= (others => '0');
 					print("MULT");
-					s_mul <= i_raw;
-	
-					bp := X"0000" & s_mul;
+
+					bp := X"0000" & i_raw;
 					pv := (others => '0');
 
 					for i in 0 to N-1 loop
@@ -115,7 +113,7 @@ begin
 
 					if s_mul_done = '1' then
 						s_state       <= SHIFT_16;
-						--s_shift       <= s_mul_res;
+
 					else
 						s_state <= MULT;
 					end if;
