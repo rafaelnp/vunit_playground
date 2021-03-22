@@ -9,11 +9,18 @@ library vunit_lib;
 context vunit_lib.vunit_context;
 
 
---!
---! 
---!
---!
---! i_raw: raw sensor data 
+--!  caculate out = ()in * 100) / 65536
+--! generic:
+--!   N: data width in bits
+--! inputs:
+--!   i_clk:
+--!   i_rst: reset, active hig
+--!   i_en:  enable, active high
+--!   i_raw: N-bit raw input data
+--! output:
+--!   o_res:  N-bit calculation result, unsigned
+--!   o_done: done flag, 1 = done, 0 = processing
+--! i_raw: raw sensor data
 entity top is
 	generic(
 		N : natural := 8
